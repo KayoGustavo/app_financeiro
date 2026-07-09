@@ -7,6 +7,7 @@ import 'providers/category_provider.dart';
 import 'providers/investment_provider.dart';
 import 'providers/simulation_provider.dart';
 import 'providers/goal_provider.dart';
+import 'providers/loan_provider.dart';
 import 'screens/splash_screen.dart';
 import 'theme/app_theme.dart';
 
@@ -29,6 +30,7 @@ class FinanceApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => InvestmentProvider()),
         ChangeNotifierProvider(create: (_) => SimulationProvider()),
         ChangeNotifierProvider(create: (_) => GoalProvider()),
+        ChangeNotifierProvider(create: (_) => LoanProvider()),
       ],
       child: MaterialApp(
         title: 'FinançasPRO',

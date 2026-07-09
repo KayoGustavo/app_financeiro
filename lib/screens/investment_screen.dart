@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import 'my_investments_screen.dart';
+import 'loan_screen.dart';
 import 'simulation_screen.dart';
 
 class InvestmentScreen extends StatelessWidget {
@@ -48,6 +49,18 @@ class InvestmentScreen extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                       builder: (_) => const MyInvestmentsScreen()),
+                ),
+              ),
+              const SizedBox(height: 14),
+              _HubCard(
+                icone: Icons.credit_card_outlined,
+                corIcone: const Color(0xFFF44336),
+                bgIcone: const Color(0x1FF44336),
+                titulo: 'Empréstimos',
+                subtitulo: 'Gerencie suas dívidas e parcelas',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LoanScreen()),
                 ),
               ),
               const SizedBox(height: 20),
