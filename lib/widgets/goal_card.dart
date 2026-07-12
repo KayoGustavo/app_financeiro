@@ -9,8 +9,9 @@ import '../theme/app_theme.dart';
 class GoalCard extends StatelessWidget {
   final GoalModel meta;
   final VoidCallback? onDelete;
+  final VoidCallback? onTap;
 
-  const GoalCard({super.key, required this.meta, this.onDelete});
+  const GoalCard({super.key, required this.meta, this.onDelete, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -30,143 +31,156 @@ class GoalCard extends StatelessWidget {
         child: const Icon(Icons.delete_outline, color: AppTheme.red),
       ),
       onDismissed: (_) => onDelete?.call(),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        decoration: BoxDecoration(
-          color: AppTheme.card,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppTheme.border, width: 0.5),
-        ),
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Cabeçalho
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: cor.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(10),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          decoration: BoxDecoration(
+            color: AppTheme.card,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppTheme.border, width: 0.5),
+          ),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Cabeçalho
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: cor.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(
+                      IconData(meta.iconeCodePoint, fontFamily: 'MaterialIcons'),
+                      color: cor,
+                      size: 18,
+                    ),
                   ),
-                  alignment: Alignment.center,
-                  child: Icon(
-                    IconData(meta.iconeCodePoint, fontFamily: 'MaterialIcons'),
-                    color: cor,
-                    size: 18,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              meta.nome,
-                              style: const TextStyle(
-                                color: AppTheme.textPrimary,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          if (meta.concluida)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: AppTheme.greenBg,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: const Text(
-                                'Concluída',
-                                style: TextStyle(
-                                  color: AppTheme.green,
-                                  fontSize: 10,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                meta.nome,
+                                style: const TextStyle(
+                                  color: AppTheme.textPrimary,
+                                  fontSize: 14,
                                   fontWeight: FontWeight.w600,
                                 ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                        ],
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        meta.diasRestantes != null
-                            ? '${meta.diasRestantes} dias restantes'
-                            : 'Sem prazo definido',
-                        style: const TextStyle(
-                          color: AppTheme.textSecondary,
-                          fontSize: 11,
+                            if (meta.concluida)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.greenBg,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: const Text(
+                                  'Concluída',
+                                  style: TextStyle(
+                                    color: AppTheme.green,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
+                        const SizedBox(height: 2),
+                        Text(
+                          meta.diasRestantes != null
+                              ? '${meta.diasRestantes} dias restantes'
+                              : 'Sem prazo definido',
+                          style: const TextStyle(
+                            color: AppTheme.textSecondary,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Ícone de edição
+                  if (onTap != null)
+                    const Padding(
+                      padding: EdgeInsets.only(left: 8),
+                      child: Icon(
+                        Icons.edit_outlined,
+                        color: AppTheme.textSecondary,
+                        size: 16,
                       ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-
-            // Barra de progresso
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: meta.progresso,
-                minHeight: 7,
-                backgroundColor: AppTheme.card2,
-                valueColor: AlwaysStoppedAnimation(cor),
+                    ),
+                ],
               ),
-            ),
-            const SizedBox(height: 8),
+              const SizedBox(height: 14),
 
-            // Valores
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '${_fmt(meta.valorAtual)} de ${_fmt(meta.valorMeta)}',
-                  style: const TextStyle(
-                    color: AppTheme.textSecondary,
-                    fontSize: 11,
-                  ),
+              // Barra de progresso
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: meta.progresso,
+                  minHeight: 7,
+                  backgroundColor: AppTheme.card2,
+                  valueColor: AlwaysStoppedAnimation(cor),
                 ),
-                Text(
-                  '${(meta.progresso * 100).toStringAsFixed(0)}%',
-                  style: TextStyle(
-                    color: cor,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 8),
 
-            if (!meta.concluida) ...[
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () => _abrirDialogoAdicionar(context),
-                  icon: const Icon(Icons.add, size: 16),
-                  label: const Text('Adicionar valor'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: cor,
-                    side: BorderSide(color: cor.withOpacity(0.4)),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+              // Valores
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '${_fmt(meta.valorAtual)} de ${_fmt(meta.valorMeta)}',
+                    style: const TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 11,
+                    ),
+                  ),
+                  Text(
+                    '${(meta.progresso * 100).toStringAsFixed(0)}%',
+                    style: TextStyle(
+                      color: cor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+
+              if (!meta.concluida) ...[
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _abrirDialogoAdicionar(context),
+                    icon: const Icon(Icons.add, size: 16),
+                    label: const Text('Adicionar valor'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: cor,
+                      side: BorderSide(color: cor.withOpacity(0.4)),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                   ),
                 ),
-              ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -212,7 +226,8 @@ class GoalCard extends StatelessWidget {
               Navigator.pop(dialogContext);
             },
             child: const Text('Adicionar',
-                style: TextStyle(color: AppTheme.green, fontWeight: FontWeight.w600)),
+                style: TextStyle(
+                    color: AppTheme.green, fontWeight: FontWeight.w600)),
           ),
         ],
       ),

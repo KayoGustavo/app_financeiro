@@ -27,7 +27,11 @@ class GoalProvider extends ChangeNotifier {
     _carregar();
   }
 
-  /// Soma um valor ao progresso atual de uma meta específica
+  Future<void> updateGoal(GoalModel meta) async {
+    await _storage.atualizarMeta(meta);
+    _carregar();
+  }
+
   Future<void> adicionarValor(String id, double valor) async {
     final meta = _metas.firstWhere((m) => m.id == id);
     meta.valorAtual += valor;

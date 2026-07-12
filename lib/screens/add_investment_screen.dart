@@ -7,7 +7,10 @@ import '../providers/investment_provider.dart';
 import '../theme/app_theme.dart';
 
 class AddInvestmentScreen extends StatefulWidget {
-  const AddInvestmentScreen({super.key});
+  /// Se vier preenchido, abre em modo de edição
+  final InvestmentModel? investimentoExistente;
+
+  const AddInvestmentScreen({super.key, this.investimentoExistente});
 
   @override
   State<AddInvestmentScreen> createState() => _AddInvestmentScreenState();
@@ -15,14 +18,41 @@ class AddInvestmentScreen extends StatefulWidget {
 
 class _AddInvestmentScreenState extends State<AddInvestmentScreen> {
   final _formKey = GlobalKey<FormState>();
-
-  final _nomeCtrl = TextEditingController();
-  final _valorInicialCtrl = TextEditingController();
-  final _aporteCtrl = TextEditingController(text: '0');
-  final _taxaCtrl = TextEditingController();
-  final _tempoCtrl = TextEditingController();
+  late final TextEditingController _nomeCtrl;
+  late final TextEditingController _valorInicialCtrl;
+  late final TextEditingController _aporteCtrl;
+  late final TextEditingController _taxaCtrl;
+  late final TextEditingController _tempoCtrl;
 
   bool _salvando = false;
+
+  bool get _isEdicao => widget.investimentoExistente != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final inv = widget.investimentoExistente;
+
+    _nomeCtrl = TextEditingController(text: inv?.nome ?? '');
+    _valorInicialCtrl = TextEditingController(
+      text: inv != null
+          ? inv.valorInicial.toStringAsFixed(2).replaceAll('.', ',')
+          : '',
+    );
+    _aporteCtrl = TextEditingController(
+      text: inv != null
+          ? inv.aporteMensal.toStringAsFixed(2).replaceAll('.', ',')
+          : '0',
+    );
+    _taxaCtrl = TextEditingController(
+      text: inv != null
+          ? inv.taxaMensalPercent.toStringAsFixed(2).replaceAll('.', ',')
+          : '',
+    );
+    _tempoCtrl = TextEditingController(
+      text: inv != null ? inv.tempoMeses.toString() : '',
+    );
+  }
 
   @override
   void dispose() {
@@ -39,9 +69,10 @@ class _AddInvestmentScreenState extends State<AddInvestmentScreen> {
     return Scaffold(
       backgroundColor: AppTheme.bg,
       appBar: AppBar(
-        title: const Text('Novo investimento'),
+        backgroundColor: AppTheme.bg,
+        title: Text(_isEdicao ? 'Editar investimento' : 'Novo investimento'),
         leading: IconButton(
-          icon: const Icon(Icons.close),
+          icon: const Icon(Icons.close, color: AppTheme.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -50,7 +81,6 @@ class _AddInvestmentScreenState extends State<AddInvestmentScreen> {
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
-            // Nome
             TextFormField(
               controller: _nomeCtrl,
               style: const TextStyle(color: AppTheme.textPrimary),
@@ -65,7 +95,6 @@ class _AddInvestmentScreenState extends State<AddInvestmentScreen> {
             ),
             const SizedBox(height: 14),
 
-            // Valor inicial
             TextFormField(
               controller: _valorInicialCtrl,
               style: const TextStyle(color: AppTheme.textPrimary),
@@ -76,19 +105,16 @@ class _AddInvestmentScreenState extends State<AddInvestmentScreen> {
                     color: AppTheme.textSecondary),
               ),
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[\d,.]')),
-              ],
+              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d,.]'))],
               validator: (v) {
-                if (v == null || v.trim().isEmpty) return 'Informe o valor inicial';
-                final parsed = double.tryParse(v.replaceAll(',', '.'));
-                if (parsed == null || parsed < 0) return 'Valor inválido';
+                if (v == null || v.trim().isEmpty) return 'Informe o valor';
+                final p = double.tryParse(v.replaceAll(',', '.'));
+                if (p == null || p < 0) return 'Valor inválido';
                 return null;
               },
             ),
             const SizedBox(height: 14),
 
-            // Aporte mensal
             TextFormField(
               controller: _aporteCtrl,
               style: const TextStyle(color: AppTheme.textPrimary),
@@ -99,19 +125,16 @@ class _AddInvestmentScreenState extends State<AddInvestmentScreen> {
                     color: AppTheme.textSecondary),
               ),
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[\d,.]')),
-              ],
+              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d,.]'))],
               validator: (v) {
-                if (v == null || v.trim().isEmpty) return 'Informe o aporte (ou 0)';
-                final parsed = double.tryParse(v.replaceAll(',', '.'));
-                if (parsed == null || parsed < 0) return 'Valor inválido';
+                if (v == null || v.trim().isEmpty) return 'Informe o aporte';
+                final p = double.tryParse(v.replaceAll(',', '.'));
+                if (p == null || p < 0) return 'Valor inválido';
                 return null;
               },
             ),
             const SizedBox(height: 14),
 
-            // Taxa mensal
             TextFormField(
               controller: _taxaCtrl,
               style: const TextStyle(color: AppTheme.textPrimary),
@@ -123,19 +146,16 @@ class _AddInvestmentScreenState extends State<AddInvestmentScreen> {
                 helperStyle: TextStyle(color: AppTheme.textSecondary, fontSize: 11),
               ),
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[\d,.]')),
-              ],
+              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d,.]'))],
               validator: (v) {
                 if (v == null || v.trim().isEmpty) return 'Informe a taxa';
-                final parsed = double.tryParse(v.replaceAll(',', '.'));
-                if (parsed == null || parsed <= 0) return 'Taxa inválida';
+                final p = double.tryParse(v.replaceAll(',', '.'));
+                if (p == null || p <= 0) return 'Taxa inválida';
                 return null;
               },
             ),
             const SizedBox(height: 14),
 
-            // Prazo em meses
             TextFormField(
               controller: _tempoCtrl,
               style: const TextStyle(color: AppTheme.textPrimary),
@@ -146,19 +166,17 @@ class _AddInvestmentScreenState extends State<AddInvestmentScreen> {
                     color: AppTheme.textSecondary),
               ),
               keyboardType: TextInputType.number,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-              ],
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               validator: (v) {
                 if (v == null || v.trim().isEmpty) return 'Informe o prazo';
-                final parsed = int.tryParse(v);
-                if (parsed == null || parsed <= 0) return 'Prazo inválido';
+                final p = int.tryParse(v);
+                if (p == null || p <= 0) return 'Prazo inválido';
                 return null;
               },
             ),
             const SizedBox(height: 24),
 
-            // Preview do resultado
+            // Preview
             _PreviewCard(
               valorInicialCtrl: _valorInicialCtrl,
               aporteCtrl: _aporteCtrl,
@@ -167,21 +185,19 @@ class _AddInvestmentScreenState extends State<AddInvestmentScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Botão salvar
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: _salvando ? null : _salvar,
                 child: _salvando
                     ? const SizedBox(
-                  height: 20,
-                  width: 20,
+                  height: 20, width: 20,
                   child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.black,
-                  ),
+                      strokeWidth: 2, color: Colors.black),
                 )
-                    : const Text('Salvar investimento'),
+                    : Text(_isEdicao
+                    ? 'Salvar alterações'
+                    : 'Salvar investimento'),
               ),
             ),
           ],
@@ -194,30 +210,35 @@ class _AddInvestmentScreenState extends State<AddInvestmentScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _salvando = true);
 
-    final valorInicial = double.parse(_valorInicialCtrl.text.replaceAll(',', '.'));
-    final aporte = double.parse(_aporteCtrl.text.replaceAll(',', '.'));
-    final taxaPercent = double.parse(_taxaCtrl.text.replaceAll(',', '.'));
-    final tempo = int.parse(_tempoCtrl.text);
-
     final investimento = InvestmentModel(
-      id: const Uuid().v4(),
+      id: widget.investimentoExistente?.id ?? const Uuid().v4(),
       nome: _nomeCtrl.text.trim(),
-      valorInicial: valorInicial,
-      aporteMensal: aporte,
-      taxaMensal: taxaPercent / 100, // converte % para decimal
-      tempoMeses: tempo,
-      dataInicio: DateTime.now(),
+      valorInicial:
+      double.parse(_valorInicialCtrl.text.replaceAll(',', '.')),
+      aporteMensal: double.parse(_aporteCtrl.text.replaceAll(',', '.')),
+      taxaMensal:
+      double.parse(_taxaCtrl.text.replaceAll(',', '.')) / 100,
+      tempoMeses: int.parse(_tempoCtrl.text),
+      dataInicio: widget.investimentoExistente?.dataInicio ?? DateTime.now(),
     );
 
-    await context.read<InvestmentProvider>().addInvestment(investimento);
+    final provider = context.read<InvestmentProvider>();
+
+    if (_isEdicao) {
+      await provider.updateInvestment(investimento);
+    } else {
+      await provider.addInvestment(investimento);
+    }
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Investimento adicionado!'),
+          content: Text(
+              _isEdicao ? 'Investimento atualizado!' : 'Investimento salvo!'),
           backgroundColor: AppTheme.green,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       );
       Navigator.pop(context);
@@ -225,7 +246,7 @@ class _AddInvestmentScreenState extends State<AddInvestmentScreen> {
   }
 }
 
-// ── Preview em tempo real do resultado ──────────────────────────────────────
+// ── Preview em tempo real ─────────────────────────────────────────────────────
 
 class _PreviewCard extends StatelessWidget {
   final TextEditingController valorInicialCtrl;
@@ -248,8 +269,10 @@ class _PreviewCard extends StatelessWidget {
       builder: (context, _) {
         final valorInicial =
             double.tryParse(valorInicialCtrl.text.replaceAll(',', '.')) ?? 0;
-        final aporte = double.tryParse(aporteCtrl.text.replaceAll(',', '.')) ?? 0;
-        final taxaPercent = double.tryParse(taxaCtrl.text.replaceAll(',', '.')) ?? 0;
+        final aporte =
+            double.tryParse(aporteCtrl.text.replaceAll(',', '.')) ?? 0;
+        final taxaPercent =
+            double.tryParse(taxaCtrl.text.replaceAll(',', '.')) ?? 0;
         final tempo = int.tryParse(tempoCtrl.text) ?? 0;
 
         if (taxaPercent <= 0 || tempo <= 0) {
@@ -286,36 +309,24 @@ class _PreviewCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Projeção ao final do prazo',
-                style: TextStyle(
-                  color: AppTheme.textSecondary,
-                  fontSize: 11,
-                ),
-              ),
+              const Text('Projeção ao final do prazo',
+                  style: TextStyle(
+                      color: AppTheme.textSecondary, fontSize: 11)),
               const SizedBox(height: 10),
               Row(
                 children: [
                   Expanded(
-                    child: _PreviewItem(
-                      label: 'Investido',
-                      valor: investido,
-                    ),
-                  ),
+                      child: _Item(label: 'Investido', valor: investido)),
                   Expanded(
-                    child: _PreviewItem(
-                      label: 'Acumulado',
-                      valor: montante,
-                      destaque: true,
-                    ),
-                  ),
+                      child: _Item(
+                          label: 'Acumulado',
+                          valor: montante,
+                          destaque: true)),
                   Expanded(
-                    child: _PreviewItem(
-                      label: 'Lucro',
-                      valor: lucro,
-                      cor: AppTheme.green,
-                    ),
-                  ),
+                      child: _Item(
+                          label: 'Lucro',
+                          valor: lucro,
+                          cor: AppTheme.green)),
                 ],
               ),
             ],
@@ -326,36 +337,34 @@ class _PreviewCard extends StatelessWidget {
   }
 }
 
-class _PreviewItem extends StatelessWidget {
+class _Item extends StatelessWidget {
   final String label;
   final double valor;
   final Color? cor;
   final bool destaque;
 
-  const _PreviewItem({
-    required this.label,
-    required this.valor,
-    this.cor,
-    this.destaque = false,
-  });
+  const _Item(
+      {required this.label,
+        required this.valor,
+        this.cor,
+        this.destaque = false});
 
   @override
   Widget build(BuildContext context) {
-    final formatado = valor.toStringAsFixed(2).replaceAll('.', ',');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(color: AppTheme.textSecondary, fontSize: 10),
-        ),
+        Text(label,
+            style: const TextStyle(
+                color: AppTheme.textSecondary, fontSize: 10)),
         const SizedBox(height: 2),
         Text(
-          'R\$ $formatado',
+          'R\$ ${valor.toStringAsFixed(0)}',
           style: TextStyle(
             color: cor ?? AppTheme.textPrimary,
             fontSize: destaque ? 14 : 12,
-            fontWeight: destaque ? FontWeight.w700 : FontWeight.w600,
+            fontWeight:
+            destaque ? FontWeight.w700 : FontWeight.w600,
           ),
         ),
       ],

@@ -7,7 +7,10 @@ import '../providers/goal_provider.dart';
 import '../theme/app_theme.dart';
 
 class AddGoalScreen extends StatefulWidget {
-  const AddGoalScreen({super.key});
+  /// Se vier preenchido, abre em modo de edição
+  final GoalModel? metaExistente;
+
+  const AddGoalScreen({super.key, this.metaExistente});
 
   @override
   State<AddGoalScreen> createState() => _AddGoalScreenState();
@@ -15,14 +18,16 @@ class AddGoalScreen extends StatefulWidget {
 
 class _AddGoalScreenState extends State<AddGoalScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _nomeCtrl = TextEditingController();
-  final _metaCtrl = TextEditingController();
-  final _inicialCtrl = TextEditingController(text: '0');
+  late final TextEditingController _nomeCtrl;
+  late final TextEditingController _metaCtrl;
+  late final TextEditingController _inicialCtrl;
 
-  DateTime? _dataLimite;
-  int _iconeSelecionado = 0;
-  int _corSelecionada = 0;
+  late DateTime? _dataLimite;
+  late int _iconeSelecionado;
+  late int _corSelecionada;
   bool _salvando = false;
+
+  bool get _isEdicao => widget.metaExistente != null;
 
   static const _icones = [
     Icons.flight_takeoff,
@@ -36,15 +41,41 @@ class _AddGoalScreenState extends State<AddGoalScreen> {
   ];
 
   static const _cores = [
-    '#4CAF50',
-    '#2196F3',
-    '#FF9800',
-    '#9C27B0',
-    '#E91E63',
-    '#00BCD4',
-    '#F44336',
-    '#FFC107',
+    '#4CAF50', '#2196F3', '#FF9800', '#9C27B0',
+    '#E91E63', '#00BCD4', '#F44336', '#FFC107',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    final meta = widget.metaExistente;
+
+    _nomeCtrl = TextEditingController(text: meta?.nome ?? '');
+    _metaCtrl = TextEditingController(
+      text: meta != null
+          ? meta.valorMeta.toStringAsFixed(2).replaceAll('.', ',')
+          : '',
+    );
+    _inicialCtrl = TextEditingController(
+      text: meta != null
+          ? meta.valorAtual.toStringAsFixed(2).replaceAll('.', ',')
+          : '0',
+    );
+    _dataLimite = meta?.dataLimite;
+
+    // Encontra o índice do ícone e cor atuais
+    if (meta != null) {
+      _iconeSelecionado = _icones.indexWhere(
+            (i) => i.codePoint == meta.iconeCodePoint,
+      ).clamp(0, _icones.length - 1);
+      _corSelecionada = _cores.indexWhere(
+            (c) => c == meta.cor,
+      ).clamp(0, _cores.length - 1);
+    } else {
+      _iconeSelecionado = 0;
+      _corSelecionada = 0;
+    }
+  }
 
   @override
   void dispose() {
@@ -59,9 +90,10 @@ class _AddGoalScreenState extends State<AddGoalScreen> {
     return Scaffold(
       backgroundColor: AppTheme.bg,
       appBar: AppBar(
-        title: const Text('Nova meta'),
+        backgroundColor: AppTheme.bg,
+        title: Text(_isEdicao ? 'Editar meta' : 'Nova meta'),
         leading: IconButton(
-          icon: const Icon(Icons.close),
+          icon: const Icon(Icons.close, color: AppTheme.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -70,7 +102,6 @@ class _AddGoalScreenState extends State<AddGoalScreen> {
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
-            // Nome
             TextFormField(
               controller: _nomeCtrl,
               style: const TextStyle(color: AppTheme.textPrimary),
@@ -85,7 +116,6 @@ class _AddGoalScreenState extends State<AddGoalScreen> {
             ),
             const SizedBox(height: 14),
 
-            // Valor da meta
             TextFormField(
               controller: _metaCtrl,
               style: const TextStyle(color: AppTheme.textPrimary),
@@ -95,11 +125,9 @@ class _AddGoalScreenState extends State<AddGoalScreen> {
                 prefixIcon: Icon(Icons.flag, color: AppTheme.textSecondary),
               ),
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[\d,.]')),
-              ],
+              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d,.]'))],
               validator: (v) {
-                if (v == null || v.trim().isEmpty) return 'Informe o valor da meta';
+                if (v == null || v.trim().isEmpty) return 'Informe o valor';
                 final p = double.tryParse(v.replaceAll(',', '.'));
                 if (p == null || p <= 0) return 'Valor inválido';
                 return null;
@@ -107,19 +135,16 @@ class _AddGoalScreenState extends State<AddGoalScreen> {
             ),
             const SizedBox(height: 14),
 
-            // Valor inicial
             TextFormField(
               controller: _inicialCtrl,
               style: const TextStyle(color: AppTheme.textPrimary),
               decoration: const InputDecoration(
-                labelText: 'Valor inicial (opcional)',
+                labelText: 'Valor atual',
                 prefixText: 'R\$ ',
                 prefixIcon: Icon(Icons.savings_outlined, color: AppTheme.textSecondary),
               ),
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[\d,.]')),
-              ],
+              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d,.]'))],
               validator: (v) {
                 if (v == null || v.trim().isEmpty) return null;
                 final p = double.tryParse(v.replaceAll(',', '.'));
@@ -143,12 +168,17 @@ class _AddGoalScreenState extends State<AddGoalScreen> {
                         ? IconButton(
                       icon: const Icon(Icons.close,
                           size: 18, color: AppTheme.textSecondary),
-                      onPressed: () => setState(() => _dataLimite = null),
+                      onPressed: () =>
+                          setState(() => _dataLimite = null),
                     )
                         : null,
                   ),
                   controller: TextEditingController(
-                    text: _dataLimite != null ? _formatarData(_dataLimite!) : '',
+                    text: _dataLimite != null
+                        ? '${_dataLimite!.day.toString().padLeft(2, '0')}/'
+                        '${_dataLimite!.month.toString().padLeft(2, '0')}/'
+                        '${_dataLimite!.year}'
+                        : '',
                   ),
                 ),
               ),
@@ -156,35 +186,29 @@ class _AddGoalScreenState extends State<AddGoalScreen> {
             const SizedBox(height: 20),
 
             // Ícone
-            const Text(
-              'Ícone',
-              style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
-            ),
+            const Text('Ícone',
+                style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
             const SizedBox(height: 10),
             Wrap(
-              spacing: 10,
-              runSpacing: 10,
+              spacing: 10, runSpacing: 10,
               children: List.generate(_icones.length, (i) {
-                final selecionado = i == _iconeSelecionado;
+                final sel = i == _iconeSelecionado;
                 final cor = _parseColor(_cores[_corSelecionada]);
                 return GestureDetector(
                   onTap: () => setState(() => _iconeSelecionado = i),
-                  child: Container(
-                    width: 44,
-                    height: 44,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    width: 44, height: 44,
                     decoration: BoxDecoration(
-                      color: selecionado ? cor.withOpacity(0.2) : AppTheme.card2,
+                      color: sel ? cor.withOpacity(0.2) : AppTheme.card2,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: selecionado ? cor : AppTheme.border,
-                        width: selecionado ? 1.5 : 0.5,
+                        color: sel ? cor : AppTheme.border,
+                        width: sel ? 1.5 : 0.5,
                       ),
                     ),
-                    child: Icon(
-                      _icones[i],
-                      color: selecionado ? cor : AppTheme.textSecondary,
-                      size: 20,
-                    ),
+                    child: Icon(_icones[i],
+                        color: sel ? cor : AppTheme.textSecondary, size: 20),
                   ),
                 );
               }),
@@ -192,28 +216,22 @@ class _AddGoalScreenState extends State<AddGoalScreen> {
             const SizedBox(height: 20),
 
             // Cor
-            const Text(
-              'Cor',
-              style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
-            ),
+            const Text('Cor',
+                style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
             const SizedBox(height: 10),
             Wrap(
-              spacing: 10,
-              runSpacing: 10,
+              spacing: 10, runSpacing: 10,
               children: List.generate(_cores.length, (i) {
-                final selecionado = i == _corSelecionada;
+                final sel = i == _corSelecionada;
                 final cor = _parseColor(_cores[i]);
                 return GestureDetector(
                   onTap: () => setState(() => _corSelecionada = i),
-                  child: Container(
-                    width: 36,
-                    height: 36,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    width: 36, height: 36,
                     decoration: BoxDecoration(
-                      color: cor,
-                      shape: BoxShape.circle,
-                      border: selecionado
-                          ? Border.all(color: Colors.white, width: 2.5)
-                          : null,
+                      color: cor, shape: BoxShape.circle,
+                      border: sel ? Border.all(color: Colors.white, width: 2.5) : null,
                     ),
                   ),
                 );
@@ -221,21 +239,17 @@ class _AddGoalScreenState extends State<AddGoalScreen> {
             ),
             const SizedBox(height: 32),
 
-            // Botão salvar
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: _salvando ? null : _salvar,
                 child: _salvando
                     ? const SizedBox(
-                  height: 20,
-                  width: 20,
+                  height: 20, width: 20,
                   child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.black,
-                  ),
+                      strokeWidth: 2, color: Colors.black),
                 )
-                    : const Text('Criar meta'),
+                    : Text(_isEdicao ? 'Salvar alterações' : 'Criar meta'),
               ),
             ),
           ],
@@ -247,22 +261,20 @@ class _AddGoalScreenState extends State<AddGoalScreen> {
   Future<void> _selecionarData() async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now().add(const Duration(days: 30)),
+      initialDate: _dataLimite ?? DateTime.now().add(const Duration(days: 30)),
       firstDate: DateTime.now(),
       lastDate: DateTime(2100),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: AppTheme.green,
-              onPrimary: Colors.white,
-              surface: AppTheme.card2,
-              onSurface: AppTheme.textPrimary,
-            ),
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: const ColorScheme.dark(
+            primary: AppTheme.green,
+            onPrimary: Colors.white,
+            surface: AppTheme.card2,
+            onSurface: AppTheme.textPrimary,
           ),
-          child: child!,
-        );
-      },
+        ),
+        child: child!,
+      ),
     );
     if (picked != null) setState(() => _dataLimite = picked);
   }
@@ -272,26 +284,33 @@ class _AddGoalScreenState extends State<AddGoalScreen> {
     setState(() => _salvando = true);
 
     final valorMeta = double.parse(_metaCtrl.text.replaceAll(',', '.'));
-    final valorInicial = _inicialCtrl.text.trim().isEmpty
+    final valorAtual = _inicialCtrl.text.trim().isEmpty
         ? 0.0
         : double.parse(_inicialCtrl.text.replaceAll(',', '.'));
 
     final meta = GoalModel(
-      id: const Uuid().v4(),
+      id: widget.metaExistente?.id ?? const Uuid().v4(),
       nome: _nomeCtrl.text.trim(),
       valorMeta: valorMeta,
-      valorAtual: valorInicial,
+      valorAtual: valorAtual,
       dataLimite: _dataLimite,
       iconeCodePoint: _icones[_iconeSelecionado].codePoint,
       cor: _cores[_corSelecionada],
+      dataCriacao: widget.metaExistente?.dataCriacao,
     );
 
-    await context.read<GoalProvider>().addGoal(meta);
+    final provider = context.read<GoalProvider>();
+
+    if (_isEdicao) {
+      await provider.updateGoal(meta);
+    } else {
+      await provider.addGoal(meta);
+    }
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Meta criada!'),
+          content: Text(_isEdicao ? 'Meta atualizada!' : 'Meta criada!'),
           backgroundColor: AppTheme.green,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -299,12 +318,6 @@ class _AddGoalScreenState extends State<AddGoalScreen> {
       );
       Navigator.pop(context);
     }
-  }
-
-  String _formatarData(DateTime data) {
-    return '${data.day.toString().padLeft(2, '0')}/'
-        '${data.month.toString().padLeft(2, '0')}/'
-        '${data.year}';
   }
 
   Color _parseColor(String hex) {

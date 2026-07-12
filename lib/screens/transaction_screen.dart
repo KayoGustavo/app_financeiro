@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../models/transaction_model.dart';
@@ -8,7 +9,10 @@ import '../providers/category_provider.dart';
 import '../theme/app_theme.dart';
 
 class TransactionScreen extends StatefulWidget {
-  const TransactionScreen({super.key});
+  /// Se vier preenchido, abre em modo de edição
+  final TransactionModel? transacaoExistente;
+
+  const TransactionScreen({super.key, this.transacaoExistente});
 
   @override
   State<TransactionScreen> createState() => _TransactionScreenState();
@@ -16,14 +20,31 @@ class TransactionScreen extends StatefulWidget {
 
 class _TransactionScreenState extends State<TransactionScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _descricaoCtrl = TextEditingController();
-  final _valorCtrl = TextEditingController();
-  final _obsCtrl = TextEditingController();
+  late final TextEditingController _descricaoCtrl;
+  late final TextEditingController _valorCtrl;
+  late final TextEditingController _obsCtrl;
 
-  TipoTransacao _tipo = TipoTransacao.despesa;
-  String? _categoriaId;
-  DateTime _data = DateTime.now();
+  late TipoTransacao _tipo;
+  late String? _categoriaId;
+  late DateTime _data;
   bool _salvando = false;
+
+  bool get _isEdicao => widget.transacaoExistente != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final tx = widget.transacaoExistente;
+
+    _descricaoCtrl = TextEditingController(text: tx?.descricao ?? '');
+    _valorCtrl = TextEditingController(
+      text: tx != null ? tx.valor.toStringAsFixed(2).replaceAll('.', ',') : '',
+    );
+    _obsCtrl = TextEditingController(text: tx?.observacao ?? '');
+    _tipo = tx?.tipo ?? TipoTransacao.despesa;
+    _categoriaId = tx?.categoriaId;
+    _data = tx?.data ?? DateTime.now();
+  }
 
   @override
   void dispose() {
@@ -40,9 +61,10 @@ class _TransactionScreenState extends State<TransactionScreen> {
     return Scaffold(
       backgroundColor: AppTheme.bg,
       appBar: AppBar(
-        title: const Text('Nova movimentação'),
+        backgroundColor: AppTheme.bg,
+        title: Text(_isEdicao ? 'Editar movimentação' : 'Nova movimentação'),
         leading: IconButton(
-          icon: const Icon(Icons.close),
+          icon: const Icon(Icons.close, color: AppTheme.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -82,13 +104,11 @@ class _TransactionScreenState extends State<TransactionScreen> {
                 prefixIcon: Icon(Icons.attach_money, color: AppTheme.textSecondary),
               ),
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[\d,.]')),
-              ],
+              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d,.]'))],
               validator: (v) {
                 if (v == null || v.trim().isEmpty) return 'Informe o valor';
-                final parsed = double.tryParse(v.replaceAll(',', '.'));
-                if (parsed == null || parsed <= 0) return 'Valor inválido';
+                final p = double.tryParse(v.replaceAll(',', '.'));
+                if (p == null || p <= 0) return 'Valor inválido';
                 return null;
               },
             ),
@@ -110,8 +130,7 @@ class _TransactionScreenState extends State<TransactionScreen> {
                     children: [
                       Icon(
                         IconData(cat.iconeCodePoint, fontFamily: cat.iconeFontFamily),
-                        size: 18,
-                        color: AppTheme.textSecondary,
+                        size: 18, color: AppTheme.textSecondary,
                       ),
                       const SizedBox(width: 8),
                       Text(cat.nome),
@@ -130,10 +149,9 @@ class _TransactionScreenState extends State<TransactionScreen> {
               child: AbsorbPointer(
                 child: TextFormField(
                   style: const TextStyle(color: AppTheme.textPrimary),
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     labelText: 'Data',
-                    prefixIcon: const Icon(Icons.calendar_today_outlined,
-                        color: AppTheme.textSecondary),
+                    prefixIcon: Icon(Icons.calendar_today_outlined, color: AppTheme.textSecondary),
                   ),
                   controller: TextEditingController(text: _formatarData(_data)),
                 ),
@@ -161,14 +179,10 @@ class _TransactionScreenState extends State<TransactionScreen> {
                 onPressed: _salvando ? null : _salvar,
                 child: _salvando
                     ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.black,
-                  ),
+                  height: 20, width: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
                 )
-                    : const Text('Salvar movimentação'),
+                    : Text(_isEdicao ? 'Salvar alterações' : 'Salvar movimentação'),
               ),
             ),
           ],
@@ -183,19 +197,17 @@ class _TransactionScreenState extends State<TransactionScreen> {
       initialDate: _data,
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: AppTheme.green,
-              onPrimary: Colors.white,
-              surface: AppTheme.card2,
-              onSurface: AppTheme.textPrimary,
-            ),
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: const ColorScheme.dark(
+            primary: AppTheme.green,
+            onPrimary: Colors.white,
+            surface: AppTheme.card2,
+            onSurface: AppTheme.textPrimary,
           ),
-          child: child!,
-        );
-      },
+        ),
+        child: child!,
+      ),
     );
     if (picked != null) setState(() => _data = picked);
   }
@@ -207,7 +219,7 @@ class _TransactionScreenState extends State<TransactionScreen> {
     final valor = double.parse(_valorCtrl.text.replaceAll(',', '.'));
 
     final transacao = TransactionModel(
-      id: const Uuid().v4(),
+      id: widget.transacaoExistente?.id ?? const Uuid().v4(),
       descricao: _descricaoCtrl.text.trim(),
       valor: valor,
       tipo: _tipo,
@@ -216,16 +228,18 @@ class _TransactionScreenState extends State<TransactionScreen> {
       observacao: _obsCtrl.text.trim().isEmpty ? null : _obsCtrl.text.trim(),
     );
 
-    await context.read<TransactionProvider>().addTransaction(transacao);
+    final provider = context.read<TransactionProvider>();
+
+    if (_isEdicao) {
+      await provider.updateTransaction(transacao);
+    } else {
+      await provider.addTransaction(transacao);
+    }
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            _tipo == TipoTransacao.receita
-                ? 'Receita adicionada!'
-                : 'Despesa adicionada!',
-          ),
+          content: Text(_isEdicao ? 'Movimentação atualizada!' : 'Movimentação salva!'),
           backgroundColor: _tipo == TipoTransacao.receita
               ? AppTheme.green
               : AppTheme.card2,
@@ -237,11 +251,8 @@ class _TransactionScreenState extends State<TransactionScreen> {
     }
   }
 
-  String _formatarData(DateTime data) {
-    return '${data.day.toString().padLeft(2, '0')}/'
-        '${data.month.toString().padLeft(2, '0')}/'
-        '${data.year}';
-  }
+  String _formatarData(DateTime data) =>
+      DateFormat('dd/MM/yyyy', 'pt_BR').format(data);
 }
 
 // ── Seletor Receita / Despesa ─────────────────────────────────────────────────
@@ -316,11 +327,8 @@ class _Opcao extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                icon,
-                size: 17,
-                color: selecionado ? cor : AppTheme.textSecondary,
-              ),
+              Icon(icon, size: 17,
+                  color: selecionado ? cor : AppTheme.textSecondary),
               const SizedBox(width: 6),
               Text(
                 label,

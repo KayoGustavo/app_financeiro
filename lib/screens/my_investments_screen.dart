@@ -178,6 +178,14 @@ class MyInvestmentsScreen extends StatelessWidget {
                     investimento: inv,
                     valorAtual: provider.patrimonioAtual(inv),
                     valorProjetado: provider.valorFinalProjetado(inv),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AddInvestmentScreen(
+                          investimentoExistente: inv,
+                        ),
+                      ),
+                    ),
                     onDelete: () => context
                         .read<InvestmentProvider>()
                         .removeInvestment(inv.id),

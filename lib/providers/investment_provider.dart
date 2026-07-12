@@ -28,30 +28,24 @@ class InvestmentProvider extends ChangeNotifier {
     _carregar();
   }
 
-  // ── Cálculos agregados ──────────────────────────────
-
-  /// Patrimônio total considerando o progresso atual de cada investimento
-  double get patrimonioTotal {
-    return InvestmentService.calcularPatrimonioTotal(_investimentos);
+  Future<void> updateInvestment(InvestmentModel investimento) async {
+    await _storage.salvarInvestimento(investimento); // put sobrescreve pelo id
+    _carregar();
   }
 
-  /// Total de dinheiro aportado (sem juros) até agora
-  double get totalInvestidoGeral {
-    return InvestmentService.calcularTotalInvestidoGeral(_investimentos);
-  }
+  // ── Cálculos ──────────────────────────────────────
 
-  /// Lucro acumulado (patrimônio - total investido)
-  double get lucroTotal {
-    return patrimonioTotal - totalInvestidoGeral;
-  }
+  double get patrimonioTotal =>
+      InvestmentService.calcularPatrimonioTotal(_investimentos);
 
-  /// Calcula o patrimônio atual de um investimento específico
-  double patrimonioAtual(InvestmentModel investimento) {
-    return InvestmentService.calcularPatrimonioAtual(investimento);
-  }
+  double get totalInvestidoGeral =>
+      InvestmentService.calcularTotalInvestidoGeral(_investimentos);
 
-  /// Calcula o valor final projetado de um investimento específico
-  double valorFinalProjetado(InvestmentModel investimento) {
-    return InvestmentService.calcularValorFinalProjetado(investimento);
-  }
+  double get lucroTotal => patrimonioTotal - totalInvestidoGeral;
+
+  double patrimonioAtual(InvestmentModel inv) =>
+      InvestmentService.calcularPatrimonioAtual(inv);
+
+  double valorFinalProjetado(InvestmentModel inv) =>
+      InvestmentService.calcularValorFinalProjetado(inv);
 }

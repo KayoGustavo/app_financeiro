@@ -2,17 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/transaction_provider.dart';
 import '../providers/category_provider.dart';
+import '../providers/goal_provider.dart';
+import '../providers/loan_provider.dart';
+import '../providers/investment_provider.dart';
+import '../services/insight_service.dart';
 import '../widgets/balance_card.dart';
 import '../widgets/transaction_tile.dart';
 import '../widgets/grafico_pizza.dart';
+import '../widgets/insight_card.dart';
 import '../theme/app_theme.dart';
 import 'transaction_screen.dart';
 import 'transactions_list_screen.dart';
 import 'investment_screen.dart';
 import 'goals_screen.dart';
+import 'category_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
@@ -76,8 +83,13 @@ class _HomeTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final txProvider = context.watch<TransactionProvider>();
     final catProvider = context.watch<CategoryProvider>();
+    final goalProvider = context.watch<GoalProvider>();
+    final loanProvider = context.watch<LoanProvider>();
+    final invProvider = context.watch<InvestmentProvider>();
+
     final ultimas = txProvider.transacoes.take(10).toList();
 
+    // Gráfico de pizza
     final gastos = txProvider.gastosPorCategoria;
     final totalGastos = gastos.values.fold(0.0, (s, v) => s + v);
     final fatias = gastos.entries.map((e) {
@@ -90,8 +102,27 @@ class _HomeTab extends StatelessWidget {
       return FatiaPizza(label: cat.nome, valor: e.value, cor: cor);
     }).whereType<FatiaPizza>().toList();
 
+    // Nomes de categorias para o InsightService
+    final nomesCategorias = {
+      for (final cat in catProvider.categorias) cat.id: cat.nome,
+    };
+
+    // Gera insights
+    final insights = InsightService.gerar(
+      transacoes: txProvider.transacoes,
+      gastosPorCategoria: gastos,
+      nomesCategorias: nomesCategorias,
+      metas: goalProvider.metas,
+      emprestimos: loanProvider.emprestimos,
+      investimentos: invProvider.investimentos,
+      totalReceitas: txProvider.totalReceitas,
+      totalDespesas: txProvider.totalDespesas,
+      parcelaMensalTotal: loanProvider.parcelaMensalTotal,
+    );
+
     return CustomScrollView(
       slivers: [
+        // Header
         SliverToBoxAdapter(
           child: Container(
             color: AppTheme.bg,
@@ -102,41 +133,48 @@ class _HomeTab extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(_saudacao().toUpperCase(),
-                        style: const TextStyle(color: AppTheme.textSecondary, fontSize: 11, letterSpacing: 1.2)),
+                    Text(
+                      _saudacao().toUpperCase(),
+                      style: const TextStyle(color: AppTheme.textSecondary, fontSize: 11, letterSpacing: 1.2),
+                    ),
                     const SizedBox(height: 2),
                     const Text('Kayo',
                         style: TextStyle(color: AppTheme.textPrimary, fontSize: 26, fontWeight: FontWeight.w600)),
                   ],
                 ),
-                Stack(
-                  children: [
-                    Container(
-                      width: 42, height: 42,
-                      decoration: BoxDecoration(
-                        color: AppTheme.card2, shape: BoxShape.circle,
-                        border: Border.all(color: AppTheme.border, width: 0.5),
-                      ),
-                      alignment: Alignment.center,
-                      child: const Text('K', style: TextStyle(color: AppTheme.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
-                    ),
-                    Positioned(
-                      top: 1, right: 1,
-                      child: Container(
-                        width: 10, height: 10,
+                GestureDetector(
+                  onTap: () => _abrirMenuAvatar(context),
+                  child: Stack(
+                    children: [
+                      Container(
+                        width: 42, height: 42,
                         decoration: BoxDecoration(
-                          color: AppTheme.green, shape: BoxShape.circle,
-                          border: Border.all(color: AppTheme.bg, width: 1.5),
+                          color: AppTheme.card2, shape: BoxShape.circle,
+                          border: Border.all(color: AppTheme.border, width: 0.5),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Text('K',
+                            style: TextStyle(color: AppTheme.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
+                      ),
+                      Positioned(
+                        top: 1, right: 1,
+                        child: Container(
+                          width: 10, height: 10,
+                          decoration: BoxDecoration(
+                            color: AppTheme.green, shape: BoxShape.circle,
+                            border: Border.all(color: AppTheme.bg, width: 1.5),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
         ),
 
+        // BalanceCard
         SliverToBoxAdapter(
           child: BalanceCard(
             saldo: txProvider.saldoTotal,
@@ -146,6 +184,7 @@ class _HomeTab extends StatelessWidget {
           ),
         ),
 
+        // ResumoCards
         SliverToBoxAdapter(
           child: ResumoCards(
             receitas: txProvider.totalReceitas,
@@ -153,6 +192,16 @@ class _HomeTab extends StatelessWidget {
           ),
         ),
 
+        // Insights — só aparece se houver dados
+        if (insights.isNotEmpty)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 20),
+              child: InsightsCarrossel(insights: insights),
+            ),
+          ),
+
+        // Gráfico de pizza
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
@@ -182,6 +231,7 @@ class _HomeTab extends StatelessWidget {
           ),
         ),
 
+        // Últimas movimentações
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
@@ -200,6 +250,7 @@ class _HomeTab extends StatelessWidget {
           ),
         ),
 
+        // Lista
         ultimas.isEmpty
             ? SliverToBoxAdapter(child: _EmptyState())
             : SliverPadding(
@@ -214,6 +265,14 @@ class _HomeTab extends StatelessWidget {
                     TransactionTile(
                       transacao: tx,
                       categoria: cat,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => TransactionScreen(
+                            transacaoExistente: tx,
+                          ),
+                        ),
+                      ),
                       onDelete: () => context.read<TransactionProvider>().removeTransaction(tx.id),
                     ),
                     if (index < ultimas.length - 1)
@@ -235,6 +294,52 @@ class _HomeTab extends StatelessWidget {
     if (hora < 18) return 'Boa tarde,';
     return 'Boa noite,';
   }
+
+  void _abrirMenuAvatar(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 36, height: 4,
+                decoration: BoxDecoration(
+                  color: AppTheme.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text('Configurações',
+                style: TextStyle(
+                    color: AppTheme.textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600)),
+            const SizedBox(height: 16),
+            _MenuOpcao(
+              icone: Icons.category_outlined,
+              label: 'Gerenciar categorias',
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const CategoryScreen()),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _EmptyState extends StatelessWidget {
@@ -253,6 +358,50 @@ class _EmptyState extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
         ],
+      ),
+    );
+  }
+}
+
+class _MenuOpcao extends StatelessWidget {
+  final IconData icone;
+  final String label;
+  final VoidCallback onTap;
+
+  const _MenuOpcao({
+    required this.icone,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        decoration: BoxDecoration(
+          color: AppTheme.card2,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppTheme.border, width: 0.5),
+        ),
+        child: Row(
+          children: [
+            Icon(icone, color: AppTheme.textSecondary, size: 20),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: const TextStyle(
+                color: AppTheme.textPrimary,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const Spacer(),
+            const Icon(Icons.chevron_right,
+                color: AppTheme.textSecondary, size: 18),
+          ],
+        ),
       ),
     );
   }
