@@ -8,7 +8,7 @@ import 'providers/investment_provider.dart';
 import 'providers/simulation_provider.dart';
 import 'providers/goal_provider.dart';
 import 'providers/loan_provider.dart';
-import 'screens/splash_screen.dart';
+import 'screens/login_screen.dart';
 import 'theme/app_theme.dart';
 
 Future<void> main() async {
@@ -36,7 +36,7 @@ class FinanceApp extends StatelessWidget {
         title: 'FinançasPRO',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.dark,
-        home: const SplashScreen(),
+        home: const LoginScreen(),
       ),
     );
   }

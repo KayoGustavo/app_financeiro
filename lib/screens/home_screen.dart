@@ -16,6 +16,7 @@ import 'transactions_list_screen.dart';
 import 'investment_screen.dart';
 import 'goals_screen.dart';
 import 'category_screen.dart';
+import 'profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -324,6 +325,18 @@ class _HomeTab extends StatelessWidget {
                     fontSize: 16,
                     fontWeight: FontWeight.w600)),
             const SizedBox(height: 16),
+            _MenuOpcao(
+              icone: Icons.person_outline,
+              label: 'Meu perfil',
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                );
+              },
+            ),
+            const SizedBox(height: 10),
             _MenuOpcao(
               icone: Icons.category_outlined,
               label: 'Gerenciar categorias',
