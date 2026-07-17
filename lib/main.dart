@@ -10,11 +10,21 @@ import 'providers/goal_provider.dart';
 import 'providers/loan_provider.dart';
 import 'screens/login_screen.dart';
 import 'theme/app_theme.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'config/supabase_config.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await initializeDateFormatting('pt_BR', null);
+
   await StorageService.init();
+
+  await Supabase.initialize(
+    url: SupabaseConfig.url,
+    anonKey: SupabaseConfig.anonKey,
+  );
+
   runApp(const FinanceApp());
 }
 

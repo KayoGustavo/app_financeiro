@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/app_theme.dart';
 import 'home_screen.dart';
+import '../services/supabase_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -15,6 +17,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailCtrl = TextEditingController();
   final _senhaCtrl = TextEditingController();
   final _confirmarCtrl = TextEditingController();
+  final SupabaseService _supabase = SupabaseService();
   bool _senhaVisivel = false;
   bool _carregando = false;
   String? _erro;
@@ -218,19 +221,41 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _criar() async {
     if (!_formKey.currentState!.validate()) return;
+
     setState(() {
       _carregando = true;
       _erro = null;
     });
 
-    // Por enquanto navega direto — depois o Supabase cria o usuário aqui
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    if (mounted) {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-            (_) => false,
+    try {
+      await _supabase.signUp(
+        email: _emailCtrl.text.trim(),
+        password: _senhaCtrl.text.trim(),
       );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Conta criada com sucesso!'),
+        ),
+      );
+
+      Navigator.pop(context);
+    } on AuthException catch (e) {
+      setState(() {
+        _erro = e.message;
+      });
+    } catch (e) {
+      setState(() {
+        _erro = 'Erro inesperado: $e';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _carregando = false;
+        });
+      }
     }
   }
 }

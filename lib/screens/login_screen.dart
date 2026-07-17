@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import 'register_screen.dart';
 import '../screens/home_screen.dart';
+import '../services/supabase_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -14,6 +17,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
   final _senhaCtrl = TextEditingController();
+  final SupabaseService _supabase = SupabaseService();
   bool _senhaVisivel = false;
   bool _carregando = false;
   String? _erro;
@@ -214,19 +218,38 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _entrar() async {
     if (!_formKey.currentState!.validate()) return;
+
     setState(() {
       _carregando = true;
       _erro = null;
     });
 
-    // Por enquanto navega direto — depois o Supabase valida aqui
-    await Future.delayed(const Duration(milliseconds: 500));
+    try {
+      await _supabase.signIn(
+        email: _emailCtrl.text.trim(),
+        password: _senhaCtrl.text.trim(),
+      );
 
-    if (mounted) {
+      if (!mounted) return;
+
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const HomeScreen()),
             (_) => false,
       );
+    } on AuthException catch (e) {
+      setState(() {
+        _erro = e.message;
+      });
+    } catch (e) {
+      setState(() {
+        _erro = "Erro inesperado: $e";
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _carregando = false;
+        });
+      }
     }
   }
 }
