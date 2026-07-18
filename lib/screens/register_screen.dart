@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/app_theme.dart';
-import 'home_screen.dart';
 import '../services/supabase_service.dart';
+import 'home_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -52,25 +52,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Bem-vindo!',
-                  style: TextStyle(
-                    color: AppTheme.textPrimary,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                const Text('Bem-vindo!',
+                    style: TextStyle(
+                        color: AppTheme.textPrimary,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w600)),
                 const SizedBox(height: 6),
-                const Text(
-                  'Crie sua conta para começar',
-                  style: TextStyle(
-                    color: AppTheme.textSecondary,
-                    fontSize: 13,
-                  ),
-                ),
+                const Text('Crie sua conta para começar',
+                    style: TextStyle(
+                        color: AppTheme.textSecondary, fontSize: 13)),
                 const SizedBox(height: 32),
 
-                // Erro
                 if (_erro != null) ...[
                   Container(
                     width: double.infinity,
@@ -81,15 +73,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       border: Border.all(
                           color: AppTheme.red.withOpacity(0.3), width: 0.5),
                     ),
-                    child: Text(
-                      _erro!,
-                      style: const TextStyle(color: AppTheme.red, fontSize: 13),
-                    ),
+                    child: Text(_erro!,
+                        style: const TextStyle(
+                            color: AppTheme.red, fontSize: 13)),
                   ),
                   const SizedBox(height: 16),
                 ],
 
-                // Nome
                 TextFormField(
                   controller: _nomeCtrl,
                   style: const TextStyle(color: AppTheme.textPrimary),
@@ -100,14 +90,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         color: AppTheme.textSecondary),
                   ),
                   validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'Informe seu nome';
+                    if (v == null || v.trim().isEmpty)
+                      return 'Informe seu nome';
                     if (v.trim().length < 3) return 'Nome muito curto';
                     return null;
                   },
                 ),
                 const SizedBox(height: 14),
 
-                // Email
                 TextFormField(
                   controller: _emailCtrl,
                   style: const TextStyle(color: AppTheme.textPrimary),
@@ -118,14 +108,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         color: AppTheme.textSecondary),
                   ),
                   validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'Informe o email';
+                    if (v == null || v.trim().isEmpty)
+                      return 'Informe o email';
                     if (!v.contains('@')) return 'Email inválido';
                     return null;
                   },
                 ),
                 const SizedBox(height: 14),
 
-                // Senha
                 TextFormField(
                   controller: _senhaCtrl,
                   style: const TextStyle(color: AppTheme.textPrimary),
@@ -154,7 +144,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 14),
 
-                // Confirmar senha
                 TextFormField(
                   controller: _confirmarCtrl,
                   style: const TextStyle(color: AppTheme.textPrimary),
@@ -172,7 +161,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 32),
 
-                // Botão criar conta
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -189,25 +177,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                // Link login
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
-                      'Já tem conta? ',
-                      style: TextStyle(
-                          color: AppTheme.textSecondary, fontSize: 13),
-                    ),
+                    const Text('Já tem conta? ',
+                        style: TextStyle(
+                            color: AppTheme.textSecondary, fontSize: 13)),
                     GestureDetector(
                       onTap: () => Navigator.pop(context),
-                      child: const Text(
-                        'Fazer login',
-                        style: TextStyle(
-                          color: AppTheme.green,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                      child: const Text('Fazer login',
+                          style: TextStyle(
+                            color: AppTheme.green,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          )),
                     ),
                   ],
                 ),
@@ -221,41 +204,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _criar() async {
     if (!_formKey.currentState!.validate()) return;
-
-    setState(() {
-      _carregando = true;
-      _erro = null;
-    });
+    setState(() { _carregando = true; _erro = null; });
 
     try {
-      await _supabase.signUp(
+      // Cria o usuário passando o nome nos metadados
+      await Supabase.instance.client.auth.signUp(
         email: _emailCtrl.text.trim(),
         password: _senhaCtrl.text.trim(),
+        data: {'nome': _nomeCtrl.text.trim()},
       );
 
       if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Conta criada com sucesso!'),
-        ),
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+            (_) => false,
       );
-
-      Navigator.pop(context);
     } on AuthException catch (e) {
-      setState(() {
-        _erro = e.message;
-      });
+      setState(() => _erro = e.message);
     } catch (e) {
-      setState(() {
-        _erro = 'Erro inesperado: $e';
-      });
+      setState(() => _erro = 'Erro inesperado: $e');
     } finally {
-      if (mounted) {
-        setState(() {
-          _carregando = false;
-        });
-      }
+      if (mounted) setState(() => _carregando = false);
     }
   }
 }

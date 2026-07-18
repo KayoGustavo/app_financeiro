@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
-import 'register_screen.dart';
-import '../screens/home_screen.dart';
-import '../services/supabase_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
+import '../theme/app_theme.dart';
+import '../services/supabase_service.dart';
+import '../services/sync_service.dart';
+import 'register_screen.dart';
+import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -42,10 +42,8 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Logo
                   Container(
-                    width: 72,
-                    height: 72,
+                    width: 72, height: 72,
                     decoration: BoxDecoration(
                       color: AppTheme.greenBg,
                       borderRadius: BorderRadius.circular(20),
@@ -53,30 +51,21 @@ class _LoginScreenState extends State<LoginScreen> {
                     alignment: Alignment.center,
                     child: const Icon(
                       Icons.account_balance_wallet_outlined,
-                      color: AppTheme.green,
-                      size: 36,
+                      color: AppTheme.green, size: 36,
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'FinançasPRO',
-                    style: TextStyle(
-                      color: AppTheme.textPrimary,
-                      fontSize: 24,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  const Text('FinançasPRO',
+                      style: TextStyle(
+                          color: AppTheme.textPrimary,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w600)),
                   const SizedBox(height: 6),
-                  const Text(
-                    'Faça login para continuar',
-                    style: TextStyle(
-                      color: AppTheme.textSecondary,
-                      fontSize: 13,
-                    ),
-                  ),
+                  const Text('Faça login para continuar',
+                      style: TextStyle(
+                          color: AppTheme.textSecondary, fontSize: 13)),
                   const SizedBox(height: 36),
 
-                  // Erro
                   if (_erro != null) ...[
                     Container(
                       width: double.infinity,
@@ -87,16 +76,13 @@ class _LoginScreenState extends State<LoginScreen> {
                         border: Border.all(
                             color: AppTheme.red.withOpacity(0.3), width: 0.5),
                       ),
-                      child: Text(
-                        _erro!,
-                        style: const TextStyle(
-                            color: AppTheme.red, fontSize: 13),
-                      ),
+                      child: Text(_erro!,
+                          style: const TextStyle(
+                              color: AppTheme.red, fontSize: 13)),
                     ),
                     const SizedBox(height: 16),
                   ],
 
-                  // Email
                   TextFormField(
                     controller: _emailCtrl,
                     style: const TextStyle(color: AppTheme.textPrimary),
@@ -107,15 +93,13 @@ class _LoginScreenState extends State<LoginScreen> {
                           color: AppTheme.textSecondary),
                     ),
                     validator: (v) {
-                      if (v == null || v.trim().isEmpty)
-                        return 'Informe o email';
+                      if (v == null || v.trim().isEmpty) return 'Informe o email';
                       if (!v.contains('@')) return 'Email inválido';
                       return null;
                     },
                   ),
                   const SizedBox(height: 14),
 
-                  // Senha
                   TextFormField(
                     controller: _senhaCtrl,
                     style: const TextStyle(color: AppTheme.textPrimary),
@@ -129,8 +113,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           _senhaVisivel
                               ? Icons.visibility_outlined
                               : Icons.visibility_off_outlined,
-                          color: AppTheme.textSecondary,
-                          size: 20,
+                          color: AppTheme.textSecondary, size: 20,
                         ),
                         onPressed: () =>
                             setState(() => _senhaVisivel = !_senhaVisivel),
@@ -144,15 +127,13 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Botão entrar
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: _carregando ? null : _entrar,
                       child: _carregando
                           ? const SizedBox(
-                        height: 20,
-                        width: 20,
+                        height: 20, width: 20,
                         child: CircularProgressIndicator(
                             strokeWidth: 2, color: Colors.black),
                       )
@@ -161,49 +142,38 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Divider
                   Row(
                     children: [
-                      Expanded(
-                          child: Divider(
-                              color: AppTheme.border, thickness: 0.5)),
+                      Expanded(child: Divider(color: AppTheme.border, thickness: 0.5)),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: Text('ou',
                             style: TextStyle(
-                                color: AppTheme.textSecondary,
-                                fontSize: 12)),
+                                color: AppTheme.textSecondary, fontSize: 12)),
                       ),
-                      Expanded(
-                          child: Divider(
-                              color: AppTheme.border, thickness: 0.5)),
+                      Expanded(child: Divider(color: AppTheme.border, thickness: 0.5)),
                     ],
                   ),
                   const SizedBox(height: 20),
 
-                  // Link cadastro
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text(
-                        'Não tem conta? ',
-                        style: TextStyle(
-                            color: AppTheme.textSecondary, fontSize: 13),
-                      ),
+                      const Text('Não tem conta? ',
+                          style: TextStyle(
+                              color: AppTheme.textSecondary, fontSize: 13)),
                       GestureDetector(
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
                               builder: (_) => const RegisterScreen()),
                         ),
-                        child: const Text(
-                          'Criar conta',
-                          style: TextStyle(
-                            color: AppTheme.green,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                        child: const Text('Criar conta',
+                            style: TextStyle(
+                              color: AppTheme.green,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            )),
                       ),
                     ],
                   ),
@@ -218,11 +188,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _entrar() async {
     if (!_formKey.currentState!.validate()) return;
-
-    setState(() {
-      _carregando = true;
-      _erro = null;
-    });
+    setState(() { _carregando = true; _erro = null; });
 
     try {
       await _supabase.signIn(
@@ -230,26 +196,22 @@ class _LoginScreenState extends State<LoginScreen> {
         password: _senhaCtrl.text.trim(),
       );
 
-      if (!mounted) return;
+      // Após login, baixa os dados do Supabase para o Hive
+      try {
+        await SyncService().downloadTudo();
+      } catch (_) {} // Se falhar o download, dados locais ainda funcionam
 
+      if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const HomeScreen()),
             (_) => false,
       );
     } on AuthException catch (e) {
-      setState(() {
-        _erro = e.message;
-      });
+      setState(() => _erro = e.message);
     } catch (e) {
-      setState(() {
-        _erro = "Erro inesperado: $e";
-      });
+      setState(() => _erro = 'Erro inesperado: $e');
     } finally {
-      if (mounted) {
-        setState(() {
-          _carregando = false;
-        });
-      }
+      if (mounted) setState(() => _carregando = false);
     }
   }
 }

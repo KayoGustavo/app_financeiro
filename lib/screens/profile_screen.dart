@@ -1,22 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/app_theme.dart';
+import '../services/supabase_service.dart';
 import 'login_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
-  // Por enquanto dados estáticos — depois vêm do Supabase
-  final String nome;
-  final String email;
-
-  const ProfileScreen({
-    super.key,
-    this.nome = 'Kayo Gustavo',
-    this.email = 'kayo@email.com',
-  });
+  const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final user = Supabase.instance.client.auth.currentUser;
+    final email = user?.email ?? '';
+    final meta = user?.userMetadata;
+    final nome = meta?['nome'] as String? ??
+        (email.isNotEmpty ? email.split('@')[0] : 'Usuário');
     final inicial = nome.isNotEmpty ? nome[0].toUpperCase() : 'U';
-    final membroDesde = _formatarData(DateTime.now());
+    final criadoEm = user?.createdAt != null
+        ? _formatarData(DateTime.parse(user!.createdAt))
+        : '-';
 
     return Scaffold(
       backgroundColor: AppTheme.bg,
@@ -77,36 +78,31 @@ class ProfileScreen extends StatelessWidget {
           const SizedBox(height: 28),
 
           // Informações
-          _SectionLabel(label: 'INFORMAÇÕES'),
+          const _SectionLabel(label: 'INFORMAÇÕES'),
           const SizedBox(height: 10),
           _InfoCard(
             itens: [
               _InfoItem(label: 'Nome', valor: nome),
               _InfoItem(label: 'Email', valor: email),
-              _InfoItem(label: 'Membro desde', valor: membroDesde),
+              _InfoItem(label: 'Membro desde', valor: criadoEm),
               _InfoItem(
                 label: 'Sincronização',
-                valor: 'Local (Hive)',
-                corValor: AppTheme.textSecondary,
+                valor: '● Supabase ativo',
+                corValor: AppTheme.green,
               ),
             ],
           ),
           const SizedBox(height: 20),
 
           // Ações
-          _SectionLabel(label: 'CONTA'),
+          const _SectionLabel(label: 'CONTA'),
           const SizedBox(height: 10),
           _ActionCard(
             itens: [
               _ActionItem(
-                icone: Icons.person_outline,
-                label: 'Editar perfil',
-                onTap: () => _editarPerfil(context),
-              ),
-              _ActionItem(
                 icone: Icons.lock_outline,
                 label: 'Alterar senha',
-                onTap: () {},
+                onTap: () => _alterarSenha(context, email),
               ),
             ],
           ),
@@ -139,8 +135,31 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  void _editarPerfil(BuildContext context) {
-    // TODO: implementar edição de perfil com Supabase
+  void _alterarSenha(BuildContext context, String email) async {
+    try {
+      await Supabase.instance.client.auth.resetPasswordForEmail(email);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Email de redefinição enviado!'),
+            backgroundColor: AppTheme.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro: $e'),
+            backgroundColor: AppTheme.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   void _confirmarLogout(BuildContext context) {
@@ -163,12 +182,15 @@ class ProfileScreen extends StatelessWidget {
                 style: TextStyle(color: AppTheme.textSecondary)),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(ctx);
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (_) => const LoginScreen()),
-                    (_) => false,
-              );
+              await SupabaseService().signOut();
+              if (context.mounted) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      (_) => false,
+                );
+              }
             },
             child: const Text('Sair',
                 style: TextStyle(
@@ -188,23 +210,19 @@ class ProfileScreen extends StatelessWidget {
   }
 }
 
-// ── Widgets auxiliares ─────────────────────────────────────────────────────
-
 class _SectionLabel extends StatelessWidget {
   final String label;
   const _SectionLabel({required this.label});
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      label,
-      style: const TextStyle(
-        color: AppTheme.textSecondary,
-        fontSize: 11,
-        letterSpacing: 1.2,
-        fontWeight: FontWeight.w600,
-      ),
-    );
+    return Text(label,
+        style: const TextStyle(
+          color: AppTheme.textSecondary,
+          fontSize: 11,
+          letterSpacing: 1.2,
+          fontWeight: FontWeight.w600,
+        ));
   }
 }
 
@@ -231,12 +249,14 @@ class _InfoCard extends StatelessWidget {
         children: itens.asMap().entries.map((e) {
           final ultimo = e.key == itens.length - 1;
           return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+            padding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
             decoration: BoxDecoration(
               border: ultimo
                   ? null
                   : Border(
-                  bottom: BorderSide(color: AppTheme.border, width: 0.5)),
+                  bottom:
+                  BorderSide(color: AppTheme.border, width: 0.5)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -244,12 +264,15 @@ class _InfoCard extends StatelessWidget {
                 Text(e.value.label,
                     style: const TextStyle(
                         color: AppTheme.textSecondary, fontSize: 13)),
-                Text(
-                  e.value.valor,
-                  style: TextStyle(
-                    color: e.value.corValor ?? AppTheme.textPrimary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
+                Flexible(
+                  child: Text(
+                    e.value.valor,
+                    textAlign: TextAlign.end,
+                    style: TextStyle(
+                      color: e.value.corValor ?? AppTheme.textPrimary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               ],
@@ -292,8 +315,8 @@ class _ActionCard extends StatelessWidget {
                 border: ultimo
                     ? null
                     : Border(
-                    bottom:
-                    BorderSide(color: AppTheme.border, width: 0.5)),
+                    bottom: BorderSide(
+                        color: AppTheme.border, width: 0.5)),
               ),
               child: Row(
                 children: [
@@ -301,11 +324,9 @@ class _ActionCard extends StatelessWidget {
                       color: AppTheme.textSecondary, size: 18),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(
-                      e.value.label,
-                      style: const TextStyle(
-                          color: AppTheme.textPrimary, fontSize: 13),
-                    ),
+                    child: Text(e.value.label,
+                        style: const TextStyle(
+                            color: AppTheme.textPrimary, fontSize: 13)),
                   ),
                   const Icon(Icons.chevron_right,
                       color: AppTheme.textSecondary, size: 18),

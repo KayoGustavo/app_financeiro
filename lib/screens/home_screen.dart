@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/transaction_provider.dart';
 import '../providers/category_provider.dart';
 import '../providers/goal_provider.dart';
@@ -88,6 +89,15 @@ class _HomeTab extends StatelessWidget {
     final loanProvider = context.watch<LoanProvider>();
     final invProvider = context.watch<InvestmentProvider>();
 
+    // Pega nome real do usuário logado
+    final user = Supabase.instance.client.auth.currentUser;
+    final email = user?.email ?? '';
+    final meta = user?.userMetadata;
+    final nomeUsuario = meta?['nome'] as String? ??
+        (email.isNotEmpty ? email.split('@')[0] : 'Olá');
+    final inicialUsuario =
+    nomeUsuario.isNotEmpty ? nomeUsuario[0].toUpperCase() : 'U';
+
     final ultimas = txProvider.transacoes.take(10).toList();
 
     // Gráfico de pizza
@@ -139,8 +149,8 @@ class _HomeTab extends StatelessWidget {
                       style: const TextStyle(color: AppTheme.textSecondary, fontSize: 11, letterSpacing: 1.2),
                     ),
                     const SizedBox(height: 2),
-                    const Text('Kayo',
-                        style: TextStyle(color: AppTheme.textPrimary, fontSize: 26, fontWeight: FontWeight.w600)),
+                    Text(nomeUsuario,
+                        style: const TextStyle(color: AppTheme.textPrimary, fontSize: 26, fontWeight: FontWeight.w600)),
                   ],
                 ),
                 GestureDetector(
@@ -154,8 +164,8 @@ class _HomeTab extends StatelessWidget {
                           border: Border.all(color: AppTheme.border, width: 0.5),
                         ),
                         alignment: Alignment.center,
-                        child: const Text('K',
-                            style: TextStyle(color: AppTheme.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
+                        child: Text(inicialUsuario,
+                            style: const TextStyle(color: AppTheme.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
                       ),
                       Positioned(
                         top: 1, right: 1,
