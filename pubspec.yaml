@@ -1,41 +1,41 @@
-name: finance_app
-description: Aplicativo de controle financeiro pessoal.
-publish_to: 'none'
-version: 1.0.0+1
+  name: finance_app
+  description: Aplicativo de controle financeiro pessoal.
+  publish_to: 'none'
+  version: 1.0.0+1
 
-environment:
-  sdk: '>=3.0.0 <4.0.0'
+  environment:
+    sdk: '>=3.0.0 <4.0.0'
 
-dependencies:
+  dependencies:
+    flutter:
+      sdk: flutter
+
+    supabase_flutter: ^2.5.0
+
+    # Gerenciamento de estado
+    provider: ^6.1.2
+
+    # Banco de dados local (NoSQL, muito rápido para Flutter)
+    hive: ^2.2.3
+    hive_flutter: ^1.1.0
+
+    # Geração de IDs únicos
+    uuid: ^4.3.3
+
+    # Formatação de datas
+    intl: ^0.19.0
+
+    # Ícones extras (para categorias)
+    cupertino_icons: ^1.0.6
+
+  dev_dependencies:
+    flutter_test:
+      sdk: flutter
+    flutter_lints: ^3.0.0
+
+    # Gerador de código para os adaptadores Hive
+    hive_generator: ^2.0.1
+    build_runner: ^2.4.9
+
   flutter:
-    sdk: flutter
-
-  supabase_flutter: ^2.5.0
-
-  # Gerenciamento de estado
-  provider: ^6.1.2
-
-  # Banco de dados local (NoSQL, muito rápido para Flutter)
-  hive: ^2.2.3
-  hive_flutter: ^1.1.0
-
-  # Geração de IDs únicos
-  uuid: ^4.3.3
-
-  # Formatação de datas
-  intl: ^0.19.0
-
-  # Ícones extras (para categorias)
-  cupertino_icons: ^1.0.6
-
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^3.0.0
-
-  # Gerador de código para os adaptadores Hive
-  hive_generator: ^2.0.1
-  build_runner: ^2.4.9
-
-flutter:
-  uses-material-design: true
+    uses-material-design: true
